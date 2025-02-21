@@ -5,7 +5,7 @@ from controllers.pid_controller import PIDController
 from controllers.lane_detector import LaneDetector
 from controllers.serial_comm import SerialCommunicator
 from processing.video_processor import VideoProcessor
-from utils.display import create_control_window, get_trackbar_values, draw_overlays
+from utils.display import create_control_window, get_trackbar_values, draw_overlays, create_main_window
 
 # Configurações
 FRAME_WIDTH = int(1920 / 4)
@@ -14,7 +14,10 @@ FRAME_CENTER = FRAME_WIDTH // 2
 ROI_START = 200
 ROI_END = 220
 NUM_LINES = 10
-ANALYZE_LANE = "RIGHT"  # ou "LEFT"
+ANALYZE_LANE = "RIGHT"  # or "LEFT"
+SHOW_VIDEO = True
+SHOW_EDGES = True
+SHOW_ROI = True
 
 TARGET_CENTER_DISTANCE = 100
 KP = 0.3
@@ -27,7 +30,7 @@ VIDEO_SOURCE = "test_videos/teste1.mp4"
 SEND_DATA = False
 COM_PORT = 'COM13'
 
-# Inicializações
+
 create_control_window()
 pid = PIDController(TARGET_CENTER_DISTANCE, KP, KI, KD, MIN_OUTPUT, MAX_OUTPUT)
 lane_detector = LaneDetector(ROI_START, ROI_END)
@@ -70,9 +73,12 @@ try:
 
         # Overlay e exibição
         frame = draw_overlays(frame, (ROI_START, ROI_END), (avg_left, avg_right), fps, FRAME_CENTER)
-        cv.imshow("Video Output", frame)
-        cv.imshow("Edges", edges)
-        cv.imshow("ROI", roi)
+        main_display = create_main_window(frame, edges, roi,
+                                          show_video=SHOW_VIDEO,
+                                          show_edges=SHOW_EDGES,
+                                          show_roi=SHOW_ROI)
+
+        cv.imshow("Main Display", main_display)
 
         if cv.waitKey(1) == ord('q'):
             break

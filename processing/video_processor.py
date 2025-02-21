@@ -12,8 +12,9 @@ class VideoProcessor:
         ret, frame = self.cap.read()
         if not ret:
             raise Exception("Erro ao capturar frame")
-        # Redimensionar
+
         frame = cv.resize(frame, (self.frame_width, self.frame_height))
+
         # Cálculo de FPS
         current_time = time.time()
         fps = 1.0 / (current_time - self.prev_time)
