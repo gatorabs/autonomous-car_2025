@@ -61,15 +61,15 @@ def create_main_window(video_img, edges_img, roi_img, show_video=True, show_edge
     if reference is None:
         reference = np.zeros((480, 640, 3), dtype=np.uint8)  # Criar um espaço em branco se não houver referência
 
-    height, width, _ = reference.shape  # Pegamos a altura e largura da referência
-    blank = np.zeros((height, width, 3), dtype=np.uint8)  # Criamos um espaço em branco do mesmo tamanho
+    height, width, _ = reference.shape
+    blank = np.zeros((height, width, 3), dtype=np.uint8)
 
     # Se a flag estiver desativada, usamos a imagem em branco
     video_disp = video_img if show_video and video_img is not None else blank
     edges_disp = edges_img if show_edges and edges_img is not None else blank
     roi_disp   = roi_img if show_roi and roi_img is not None else blank
 
-    # Converter imagens em escala de cinza para BGR se necessário
+    # Converter imagens em escala de cinza para BGR
     def ensure_color(img):
         if len(img.shape) == 2:  # Se for grayscale, converte para BGR
             return cv.cvtColor(img, cv.COLOR_GRAY2BGR)

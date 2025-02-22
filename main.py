@@ -8,7 +8,7 @@ from processing.video_processor import VideoProcessor
 from utils.display import draw_overlays, create_main_window
 from utils.real_time_trackbars import create_control_window, get_trackbar_values
 from processing.warp_perspective_processor import bird_eye
-
+from utils.buttons import start_tkinter_thread, controls
 # ========== Configurações ========== #
 FRAME_WIDTH = int(1920 / 4)
 FRAME_HEIGHT = int(1080 / 4)
@@ -20,12 +20,14 @@ ROI_X_START = 100
 ROI_X_END = 380
 
 NUM_LINES = 10
-ANALYZE_LANE = 1 # 0 for "LEFT"
+ANALYZE_LANE = 1 # 0 para "LEFT"
 
 SHOW_FPS = True
-SHOW_VIDEO = True
-SHOW_EDGES = True
-SHOW_ROI = True
+SHOW_VIDEO = controls["SHOW_VIDEO"] = True
+SHOW_EDGES = controls["SHOW_EDGES"] = True
+SHOW_ROI = controls["SHOW_ROI"] = True
+
+
 
 TARGET_CENTER_DISTANCE = 80
 
@@ -40,9 +42,10 @@ VIDEO_SOURCE = "test_videos/teste1.mp4"
 SEND_DATA = False
 COM_PORT = 'COM13'
 
-# ========== # ========== #
-
+# ========== Início dos Controles ========== #
 create_control_window()
+start_tkinter_thread()  # Inicia os botões de controle via Tkinter
+
 pid = PIDController(TARGET_CENTER_DISTANCE, KP, KI, KD, MIN_OUTPUT, MAX_OUTPUT)
 lane_detector = LaneDetector(ROI_START, ROI_END)
 serial_comm = SerialCommunicator(COM_PORT, send_interval=0.1, send_data=SEND_DATA)
@@ -65,37 +68,35 @@ try:
 
         # Extrair ROI antes da transformação de perspectiva
         roi = edges[ROI_START:ROI_END, ROI_X_START:ROI_X_END]
-
         warped_roi = bird_eye(roi)
-
 
         interval = max(1, round((ROI_END - ROI_START) / NUM_LINES))
         avg_left, avg_right = lane_detector.calculate_center_distance(warped_roi, NUM_LINES, interval)
 
-        #Atualizar velocidade e lado
+        # Atualizar velocidade e lado a partir dos trackbars
         ANALYZE_LANE = side
         data_to_send[0] = speed
 
-        if ANALYZE_LANE == 1: #Right
+        if ANALYZE_LANE == 1:  # Direita
             if avg_right != float('inf'):
                 direction = round(pid.calculate(avg_right))
                 data_to_send[1] = direction
 
-        elif ANALYZE_LANE == 0: #Left
+        elif ANALYZE_LANE == 0:  # Esquerda
             if avg_left != float('inf'):
                 direction = round(pid.calculate(avg_left))
                 data_to_send[1] = direction
-
 
         serial_comm.send(data_to_send)
 
         frame = draw_overlays(frame, (ROI_START, ROI_END), (ROI_X_START, ROI_X_END),
                               (avg_left, avg_right), fps, SHOW_FPS, FRAME_CENTER)
 
+        # Utilize os valores de controle atualizados pela interface Tkinter
         main_display = create_main_window(frame, edges, warped_roi,
-                                          show_video=SHOW_VIDEO,
-                                          show_edges=SHOW_EDGES,
-                                          show_roi=SHOW_ROI)
+                                          show_video=controls["SHOW_VIDEO"],
+                                          show_edges=controls["SHOW_EDGES"],
+                                          show_roi=controls["SHOW_ROI"])
 
         cv.imshow("Main Display", main_display)
 
