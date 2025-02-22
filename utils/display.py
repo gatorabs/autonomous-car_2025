@@ -1,18 +1,6 @@
 import cv2 as cv
 import numpy as np
 
-def create_control_window():
-    cv.namedWindow('Controls')
-    cv.createTrackbar('F_Canny', 'Controls', 20, 300, lambda x: None)
-    cv.createTrackbar('S_Canny', 'Controls', 152, 400, lambda x: None)
-    cv.createTrackbar('Speed', 'Controls', 0, 255, lambda x: None)
-
-def get_trackbar_values():
-    canny_1 = cv.getTrackbarPos('F_Canny', 'Controls')
-    canny_2 = cv.getTrackbarPos('S_Canny', 'Controls')
-    speed = cv.getTrackbarPos('Speed', 'Controls')
-    return canny_1, canny_2, speed
-
 
 def draw_overlays(frame, roi_coords, roi_x_coords, distances, fps, show_fps, frame_center):
     font = cv.FONT_HERSHEY_SIMPLEX

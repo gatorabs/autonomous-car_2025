@@ -5,7 +5,9 @@ from controllers.pid_controller import PIDController
 from controllers.lane_detector import LaneDetector
 from controllers.serial_comm import SerialCommunicator
 from processing.video_processor import VideoProcessor
-from utils.display import create_control_window, get_trackbar_values, draw_overlays, create_main_window
+from utils.display import draw_overlays, create_main_window
+from utils.real_time_trackbars import create_control_window, get_trackbar_values
+from processing.warp_perspective_processor import bird_eye
 
 # ========== Configurações ========== #
 FRAME_WIDTH = int(1920 / 4)
@@ -18,7 +20,7 @@ ROI_X_START = 100
 ROI_X_END = 380
 
 NUM_LINES = 10
-ANALYZE_LANE = "RIGHT"  # or "LEFT"
+ANALYZE_LANE = 1 # 0 for "LEFT"
 
 SHOW_FPS = True
 SHOW_VIDEO = True
@@ -51,7 +53,7 @@ data_to_send = [255, 180, 0, 0, 0, 0, 0, 0, 0]
 try:
     while True:
         frame, fps = video_proc.get_frame()
-        canny_1, canny_2, speed = get_trackbar_values()
+        canny_1, canny_2, speed, side = get_trackbar_values()
 
         # Pré-processamento
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
@@ -64,28 +66,27 @@ try:
         # Extrair ROI antes da transformação de perspectiva
         roi = edges[ROI_START:ROI_END, ROI_X_START:ROI_X_END]
 
-        # Pontos para transformação de perspectiva na ROI
-        src_points = np.float32([[0, 0], [roi.shape[1], 0],
-                                 [0, roi.shape[0]], [roi.shape[1], roi.shape[0]]])
-        dst_points = np.float32([[0, 0], [roi.shape[1], 0],
-                                 [roi.shape[1] * 0.2, roi.shape[0]], [roi.shape[1] * 0.8, roi.shape[0]]])
-        M = cv.getPerspectiveTransform(src_points, dst_points)
-        warped_roi = cv.warpPerspective(roi, M, (roi.shape[1], roi.shape[0]))
+        warped_roi = bird_eye(roi)
+
 
         interval = max(1, round((ROI_END - ROI_START) / NUM_LINES))
         avg_left, avg_right = lane_detector.calculate_center_distance(warped_roi, NUM_LINES, interval)
 
-        if ANALYZE_LANE == "RIGHT":
+        #Atualizar velocidade e lado
+        ANALYZE_LANE = side
+        data_to_send[0] = speed
+
+        if ANALYZE_LANE == 1: #Right
             if avg_right != float('inf'):
                 direction = round(pid.calculate(avg_right))
                 data_to_send[1] = direction
-        elif ANALYZE_LANE == "LEFT":
+
+        elif ANALYZE_LANE == 0: #Left
             if avg_left != float('inf'):
                 direction = round(pid.calculate(avg_left))
                 data_to_send[1] = direction
 
-        # Atualizar velocidade
-        data_to_send[0] = speed
+
         serial_comm.send(data_to_send)
 
         frame = draw_overlays(frame, (ROI_START, ROI_END), (ROI_X_START, ROI_X_END),
