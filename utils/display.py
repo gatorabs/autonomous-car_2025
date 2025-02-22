@@ -5,44 +5,61 @@ def create_control_window():
     cv.namedWindow('Controls')
     cv.createTrackbar('F_Canny', 'Controls', 20, 300, lambda x: None)
     cv.createTrackbar('S_Canny', 'Controls', 152, 400, lambda x: None)
-    cv.createTrackbar('Speed_Control', 'Controls', 0, 255, lambda x: None)
+    cv.createTrackbar('Speed', 'Controls', 0, 255, lambda x: None)
 
 def get_trackbar_values():
     canny_1 = cv.getTrackbarPos('F_Canny', 'Controls')
     canny_2 = cv.getTrackbarPos('S_Canny', 'Controls')
-    speed = cv.getTrackbarPos('Speed_Control', 'Controls')
+    speed = cv.getTrackbarPos('Speed', 'Controls')
     return canny_1, canny_2, speed
 
-def draw_overlays(frame, roi_coords, distances, fps, frame_center):
+
+def draw_overlays(frame, roi_coords, roi_x_coords, distances, fps, show_fps, frame_center):
     font = cv.FONT_HERSHEY_SIMPLEX
     font_scale = 0.5
-    font_color = (0, 0, 255)
+    font_color = (0, 255, 255)
     thickness = 1
 
     avg_left, avg_right = distances
     roi_start, roi_end = roi_coords
+    roi_x_start, roi_x_end = roi_x_coords
+
+    # Criar uma cópia do frame para desenhar a sobreposição
+    overlay = frame.copy()
+
+
+    overlay_color = (0, 255, 0)  # Verde
+    alpha = 0.3
+
+    # Desenhar retângulo semi-transparente sobre o ROI
+    cv.rectangle(overlay, (roi_x_start, roi_start), (roi_x_end, roi_end), overlay_color, -1)
+
+
+    cv.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
     # Desenhar retângulo para o lado direito
-    if not (avg_right == float('inf')):
+    if avg_right != float('inf'):
         top_left = (frame_center, roi_start)
         bottom_right = (int(avg_right) + frame_center, roi_end)
-        cv.rectangle(frame, top_left, bottom_right, (255, 0, 0), -1)
+        cv.rectangle(frame, top_left, bottom_right, (255, 0, 0), 2)
         cv.putText(frame, f"{avg_right:.1f}", (frame_center + 30, roi_start - 10),
                    font, font_scale, font_color, thickness, cv.LINE_AA)
 
     # Desenhar retângulo para o lado esquerdo
-    if not (avg_left == float('inf')):
+    if avg_left != float('inf'):
         top_left = (frame_center - int(avg_left), roi_start)
         bottom_right = (frame_center, roi_end)
-        cv.rectangle(frame, top_left, bottom_right, (0, 0, 255), -1)
+        cv.rectangle(frame, top_left, bottom_right, (0, 255, 255), 2)
         cv.putText(frame, f"{avg_left:.1f}", (frame_center - 60, roi_start - 10),
                    font, font_scale, font_color, thickness, cv.LINE_AA)
 
     # Linha central
-    cv.line(frame, (frame_center, 0), (frame_center, frame.shape[0]), (0, 255, 255), 2)
-    #FPS
-    cv.putText(frame, f"FPS: {fps:.2f}", (10, 30), font, 0.7, (0, 255, 0), 2, cv.LINE_AA)
-
+    cv.line(frame, (frame_center, 0), (frame_center, frame.shape[0]), (255, 255, 255), 2)
+    # Exibir FPS
+    if show_fps:
+        cv.putText(frame, f"FPS: {fps:.2f}", (10, 30), font, 0.7, (0, 255, 0), 2, cv.LINE_AA)
+    else:
+        print(f"FPS: {fps}")
     return frame
 
 

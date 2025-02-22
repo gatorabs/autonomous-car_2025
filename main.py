@@ -1,5 +1,5 @@
 import cv2 as cv
-
+import numpy as np
 
 from controllers.pid_controller import PIDController
 from controllers.lane_detector import LaneDetector
@@ -7,22 +7,30 @@ from controllers.serial_comm import SerialCommunicator
 from processing.video_processor import VideoProcessor
 from utils.display import create_control_window, get_trackbar_values, draw_overlays, create_main_window
 
-# Configurações
+# ========== Configurações ========== #
 FRAME_WIDTH = int(1920 / 4)
 FRAME_HEIGHT = int(1080 / 4)
 FRAME_CENTER = FRAME_WIDTH // 2
+
 ROI_START = 200
 ROI_END = 220
+ROI_X_START = 100
+ROI_X_END = 380
+
 NUM_LINES = 10
 ANALYZE_LANE = "RIGHT"  # or "LEFT"
+
+SHOW_FPS = True
 SHOW_VIDEO = True
 SHOW_EDGES = True
 SHOW_ROI = True
 
-TARGET_CENTER_DISTANCE = 100
+TARGET_CENTER_DISTANCE = 80
+
 KP = 0.3
 KI = 0.005
 KD = 0.01
+
 MIN_OUTPUT = -32
 MAX_OUTPUT = 32
 
@@ -30,6 +38,7 @@ VIDEO_SOURCE = "test_videos/teste1.mp4"
 SEND_DATA = False
 COM_PORT = 'COM13'
 
+# ========== # ========== #
 
 create_control_window()
 pid = PIDController(TARGET_CENTER_DISTANCE, KP, KI, KD, MIN_OUTPUT, MAX_OUTPUT)
@@ -48,13 +57,23 @@ try:
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         blur = cv.GaussianBlur(gray, (5, 5), 0)
         edges = cv.Canny(blur, canny_1, canny_2)
+
         kernel = cv.getStructuringElement(cv.MORPH_RECT, (4, 4))
         edges = cv.morphologyEx(edges, cv.MORPH_CLOSE, kernel)
 
-        # Extrair ROI
-        roi = edges[ROI_START:ROI_END, 0:480]
+        # Extrair ROI antes da transformação de perspectiva
+        roi = edges[ROI_START:ROI_END, ROI_X_START:ROI_X_END]
+
+        # Pontos para transformação de perspectiva na ROI
+        src_points = np.float32([[0, 0], [roi.shape[1], 0],
+                                 [0, roi.shape[0]], [roi.shape[1], roi.shape[0]]])
+        dst_points = np.float32([[0, 0], [roi.shape[1], 0],
+                                 [roi.shape[1] * 0.2, roi.shape[0]], [roi.shape[1] * 0.8, roi.shape[0]]])
+        M = cv.getPerspectiveTransform(src_points, dst_points)
+        warped_roi = cv.warpPerspective(roi, M, (roi.shape[1], roi.shape[0]))
+
         interval = max(1, round((ROI_END - ROI_START) / NUM_LINES))
-        avg_left, avg_right = lane_detector.calculate_center_distance(roi, NUM_LINES, interval)
+        avg_left, avg_right = lane_detector.calculate_center_distance(warped_roi, NUM_LINES, interval)
 
         if ANALYZE_LANE == "RIGHT":
             if avg_right != float('inf'):
@@ -67,13 +86,12 @@ try:
 
         # Atualizar velocidade
         data_to_send[0] = speed
-
-        # Envio serial
         serial_comm.send(data_to_send)
 
-        # Overlay e exibição
-        frame = draw_overlays(frame, (ROI_START, ROI_END), (avg_left, avg_right), fps, FRAME_CENTER)
-        main_display = create_main_window(frame, edges, roi,
+        frame = draw_overlays(frame, (ROI_START, ROI_END), (ROI_X_START, ROI_X_END),
+                              (avg_left, avg_right), fps, SHOW_FPS, FRAME_CENTER)
+
+        main_display = create_main_window(frame, edges, warped_roi,
                                           show_video=SHOW_VIDEO,
                                           show_edges=SHOW_EDGES,
                                           show_roi=SHOW_ROI)
