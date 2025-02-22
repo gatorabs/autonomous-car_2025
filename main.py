@@ -1,5 +1,5 @@
 import cv2 as cv
-import numpy as np
+
 from controllers.pid_controller import PIDController
 from controllers.lane_detector import LaneDetector
 from controllers.serial_comm import SerialCommunicator
