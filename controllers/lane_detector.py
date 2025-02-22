@@ -1,5 +1,4 @@
 import numpy as np
-import math
 
 class LaneDetector:
     def __init__(self, roi_start, roi_end):
@@ -14,21 +13,21 @@ class LaneDetector:
         left_distances = []
         right_distances = []
 
-        for i in range(center_y - (num_lines // 2) * interval, center_y + (num_lines // 2) * interval, interval):
-            if i < 0 or i >= height:
-                continue
+        # Define limites seguros para iteração
+        start = max(0, center_y - (num_lines // 2) * interval)
+        end = min(height, center_y + (num_lines // 2) * interval)
 
-            # Lado direito
-            for x_right in range(center_x, width):
-                if img[i, x_right] >= 50:
-                    right_distances.append(x_right - center_x)
-                    break
+        for i in range(start, end, interval):
+            row = img[i, :]
 
-            # Lado esquerdo
-            for x_left in range(center_x, -1, -1):
-                if img[i, x_left] >= 50:
-                    left_distances.append(center_x - x_left)
-                    break
+            right_indices = np.where(row[center_x:] >= 50)[0]
+            if right_indices.size > 0:
+                right_distances.append(right_indices[0])
+
+            left_indices = np.where(row[:center_x+1] >= 50)[0]
+            if left_indices.size > 0:
+
+                left_distances.append(center_x - left_indices[-1])
 
         avg_left = np.mean(left_distances) if left_distances else float('inf')
         avg_right = np.mean(right_distances) if right_distances else float('inf')

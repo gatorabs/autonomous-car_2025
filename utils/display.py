@@ -1,8 +1,8 @@
 import cv2 as cv
 import numpy as np
 
-
 def draw_overlays(frame, roi_coords, roi_x_coords, distances, fps, show_fps, frame_center):
+
     font = cv.FONT_HERSHEY_SIMPLEX
     font_scale = 0.5
     font_color = (0, 255, 255)
@@ -12,20 +12,16 @@ def draw_overlays(frame, roi_coords, roi_x_coords, distances, fps, show_fps, fra
     roi_start, roi_end = roi_coords
     roi_x_start, roi_x_end = roi_x_coords
 
-    # Criar uma cópia do frame para desenhar a sobreposição
     overlay = frame.copy()
-
 
     overlay_color = (0, 255, 0)  # Verde
     alpha = 0.3
 
-    # Desenhar retângulo semi-transparente sobre o ROI
+    # Desenha retângulo semi-transparente sobre a ROI
     cv.rectangle(overlay, (roi_x_start, roi_start), (roi_x_end, roi_end), overlay_color, -1)
-
-
     cv.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
-    # Desenhar retângulo para o lado direito
+    # Desenha retângulo para o lado direito
     if avg_right != float('inf'):
         top_left = (frame_center, roi_start)
         bottom_right = (int(avg_right) + frame_center, roi_end)
@@ -33,7 +29,7 @@ def draw_overlays(frame, roi_coords, roi_x_coords, distances, fps, show_fps, fra
         cv.putText(frame, f"{avg_right:.1f}", (frame_center + 30, roi_start - 10),
                    font, font_scale, font_color, thickness, cv.LINE_AA)
 
-    # Desenhar retângulo para o lado esquerdo
+    # Desenha retângulo para o lado esquerdo
     if avg_left != float('inf'):
         top_left = (frame_center - int(avg_left), roi_start)
         bottom_right = (frame_center, roi_end)
@@ -43,13 +39,12 @@ def draw_overlays(frame, roi_coords, roi_x_coords, distances, fps, show_fps, fra
 
     # Linha central
     cv.line(frame, (frame_center, 0), (frame_center, frame.shape[0]), (255, 255, 255), 2)
-    # Exibir FPS
+    # Exibe FPS
     if show_fps:
         cv.putText(frame, f"FPS: {fps:.2f}", (10, 30), font, 0.7, (0, 255, 0), 2, cv.LINE_AA)
     else:
         print(f"FPS: {fps}")
     return frame
-
 
 def create_main_window(video_img, edges_img, roi_img, show_video=True, show_edges=True, show_roi=True):
 
@@ -59,19 +54,26 @@ def create_main_window(video_img, edges_img, roi_img, show_video=True, show_edge
             reference = img
             break
     if reference is None:
-        reference = np.zeros((480, 640, 3), dtype=np.uint8)  # Criar um espaço em branco se não houver referência
+        reference = np.zeros((480, 640, 3), dtype=np.uint8)
 
     height, width, _ = reference.shape
-    blank = np.zeros((height, width, 3), dtype=np.uint8)
 
-    # Se a flag estiver desativada, usamos a imagem em branco
+    # Cache da imagem em branco para evitar recriações se o tamanho não mudar
+    if not hasattr(create_main_window, "blank"):
+        create_main_window.blank = np.zeros((height, width, 3), dtype=np.uint8)
+    else:
+        if create_main_window.blank.shape[0] != height or create_main_window.blank.shape[1] != width:
+            create_main_window.blank = np.zeros((height, width, 3), dtype=np.uint8)
+    blank = create_main_window.blank
+
+    # Se a flag estiver desativada, usa a imagem em branco
     video_disp = video_img if show_video and video_img is not None else blank
     edges_disp = edges_img if show_edges and edges_img is not None else blank
-    roi_disp   = roi_img if show_roi and roi_img is not None else blank
+    roi_disp   = roi_img   if show_roi and roi_img is not None else blank
 
-    # Converter imagens em escala de cinza para BGR
+    # Função auxiliar para garantir que a imagem esteja em BGR
     def ensure_color(img):
-        if len(img.shape) == 2:  # Se for grayscale, converte para BGR
+        if len(img.shape) == 2:
             return cv.cvtColor(img, cv.COLOR_GRAY2BGR)
         return img
 
@@ -79,7 +81,7 @@ def create_main_window(video_img, edges_img, roi_img, show_video=True, show_edge
     edges_disp = ensure_color(edges_disp)
     roi_disp = ensure_color(roi_disp)
 
-    # Garantir que todas as imagens tenham a mesma altura
+    # Ajusta o tamanho das imagens para que todas tenham a mesma altura
     def resize_to_reference(img, ref_height):
         if img.shape[0] != ref_height:
             return cv.resize(img, (img.shape[1], ref_height))
