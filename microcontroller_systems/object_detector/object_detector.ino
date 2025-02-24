@@ -1,9 +1,11 @@
 #include "serial_processor.h"
+#include "servo_control.h"  =
 
 void setup() {
-    setupSerialProcessor();  
+    setupSerialProcessor();
+    setupServo();
 }
+
 void loop() {
-    updateSerialInput();     
-    
+    updateSerialInput();
 }
