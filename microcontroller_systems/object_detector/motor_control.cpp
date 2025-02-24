@@ -7,7 +7,6 @@ void setupMotors() {
     pinMode(MOTOR_B_DIR_PIN, OUTPUT);
 }
 
-
 void setMotorSpeed(int motorA_speed, int motorB_speed) {
 
     // Motor A
@@ -18,7 +17,7 @@ void setMotorSpeed(int motorA_speed, int motorB_speed) {
         digitalWrite(MOTOR_A_DIR_PIN, LOW);
         analogWrite(MOTOR_A_PWM_PIN, -motorA_speed);
     }
-    
+
     // Motor B
     if (motorB_speed >= 0) {
         digitalWrite(MOTOR_B_DIR_PIN, HIGH);
@@ -29,9 +28,7 @@ void setMotorSpeed(int motorA_speed, int motorB_speed) {
     }
 }
 
-// Função para frear os motores (parar)
 void brakeMotors() {
-    
     analogWrite(MOTOR_A_PWM_PIN, 0);
     analogWrite(MOTOR_B_PWM_PIN, 0);
 }
