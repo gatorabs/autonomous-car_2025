@@ -22,7 +22,8 @@ class ObjectDetector(threading.Thread):
             if not ret:
                 continue
 
-            results = self.model(frame)
+            frame = cv2.resize(frame, (320, 240))
+            results = self.model(frame, classes=list(TARGET_CLASSES))
             person_detected = False
 
             for result in results:
