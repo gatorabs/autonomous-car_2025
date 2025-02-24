@@ -1,11 +1,12 @@
+# buttons.py
 import tkinter as tk
 from threading import Thread
-
 
 controls = {
     "SHOW_VIDEO": True,
     "SHOW_EDGES": True,
-    "SHOW_ROI": True
+    "SHOW_ROI": True,
+    "SHOW_PERSON_DETECTION": True
 }
 
 def toggle_show_video():
@@ -20,10 +21,11 @@ def toggle_show_roi():
     controls["SHOW_ROI"] = not controls["SHOW_ROI"]
     print("SHOW_ROI:", controls["SHOW_ROI"])
 
-
+def toggle_show_person_detection():
+    controls["SHOW_PERSON_DETECTION"] = not controls["SHOW_PERSON_DETECTION"]
+    print("SHOW_PERSON_DETECTION:", controls["SHOW_PERSON_DETECTION"])
 
 def create_tkinter_controls():
-
     root = tk.Tk()
     root.title("Controles Adicionais")
 
@@ -39,10 +41,11 @@ def create_tkinter_controls():
     btn_roi = tk.Button(frame, text="Toggle SHOW_ROI", command=toggle_show_roi)
     btn_roi.pack(side=tk.LEFT, padx=5)
 
+    btn_person_detection = tk.Button(frame, text="Toggle PERSON_DETECTION", command=toggle_show_person_detection)
+    btn_person_detection.pack(side=tk.LEFT, padx=5)
+
     root.mainloop()
 
-
 def start_tkinter_thread():
-    # Roda a interface Tkinter em uma thread separada para não bloquear o loop do OpenCV
     t = Thread(target=create_tkinter_controls, daemon=True)
     t.start()
